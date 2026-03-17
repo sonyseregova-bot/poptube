@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PopTube — финал (все видео на главной)</title>
+    <title>PopTube — все каналы, все видео</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <style>
-        /* Стили без изменений */
+        /* Стили без изменений (идентичны предыдущей версии) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
@@ -982,21 +982,61 @@
             boostyLink: ''
         };
 
-        let channels = {
-            'tech': { name: 'Tech Insider', id: 'tech', avatar: generateThumbnailDataURL('TI', 200, 200), banner: generateThumbnailDataURL('Tech', 800, 200), subscribers: 15000, videos: [], password: '', boostyLink: '' },
-            'gadget': { name: 'GadgetGuru', id: 'gadget', avatar: generateThumbnailDataURL('GG', 200, 200), banner: generateThumbnailDataURL('Gadget', 800, 200), subscribers: 22000, videos: [], password: '', boostyLink: '' },
-            'sport': { name: 'SportVision', id: 'sport', avatar: generateThumbnailDataURL('SV', 200, 200), banner: generateThumbnailDataURL('Sport', 800, 200), subscribers: 80000, videos: [], password: '', boostyLink: '' }
-        };
-        channels[currentUser.id] = {
-            name: currentUser.name,
-            id: currentUser.id,
-            avatar: currentUser.avatar,
-            banner: currentUser.banner,
-            subscribers: 0,
-            videos: [],
-            password: currentUser.password,
-            boostyLink: currentUser.boostyLink
-        };
+        // Все каналы (включая демо и текущего пользователя)
+        let channels = {};
+
+        // Инициализация демо-каналов (они будут добавлены, если их нет в загруженных данных)
+        function initDemoChannels() {
+            if (!channels['tech']) {
+                channels['tech'] = {
+                    name: 'Tech Insider',
+                    id: 'tech',
+                    avatar: generateThumbnailDataURL('TI', 200, 200),
+                    banner: generateThumbnailDataURL('Tech', 800, 200),
+                    subscribers: 15000,
+                    videos: [],
+                    password: '',
+                    boostyLink: ''
+                };
+            }
+            if (!channels['gadget']) {
+                channels['gadget'] = {
+                    name: 'GadgetGuru',
+                    id: 'gadget',
+                    avatar: generateThumbnailDataURL('GG', 200, 200),
+                    banner: generateThumbnailDataURL('Gadget', 800, 200),
+                    subscribers: 22000,
+                    videos: [],
+                    password: '',
+                    boostyLink: ''
+                };
+            }
+            if (!channels['sport']) {
+                channels['sport'] = {
+                    name: 'SportVision',
+                    id: 'sport',
+                    avatar: generateThumbnailDataURL('SV', 200, 200),
+                    banner: generateThumbnailDataURL('Sport', 800, 200),
+                    subscribers: 80000,
+                    videos: [],
+                    password: '',
+                    boostyLink: ''
+                };
+            }
+            // Канал текущего пользователя
+            if (!channels[currentUser.id]) {
+                channels[currentUser.id] = {
+                    name: currentUser.name,
+                    id: currentUser.id,
+                    avatar: currentUser.avatar,
+                    banner: currentUser.banner,
+                    subscribers: 0,
+                    videos: [],
+                    password: currentUser.password,
+                    boostyLink: currentUser.boostyLink
+                };
+            }
+        }
 
         let videos = [];
         let comments = {};
@@ -1007,16 +1047,83 @@
         let friendRequestsSent = {};
 
         loadFromStorage();
+        initDemoChannels(); // убедимся, что демо-каналы существуют
 
+        // Удаляем старые демо-видео, если они были (v1, v2, v3)
         const demoIds = ['v1', 'v2', 'v3'];
         videos = videos.filter(v => !demoIds.includes(v.id));
         Object.keys(channels).forEach(chId => {
             channels[chId].videos = channels[chId].videos.filter(id => !demoIds.includes(id));
         });
 
-        videos.forEach(v => {
-            if (channels[v.channelId] && !channels[v.channelId].videos.includes(v.id))
+        // Если видео совсем нет, добавим примеры для демо-каналов
+        if (videos.length === 0) {
+            const exampleVideos = [
+                {
+                    id: 'v_tech_1',
+                    title: 'Обзор нового iPhone',
+                    description: 'Самые свежие технологии',
+                    channelId: 'tech',
+                    channelName: 'Tech Insider',
+                    channelAvatar: channels['tech'].avatar,
+                    views: 12500,
+                    viewers: [],
+                    publishedAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
+                    duration: '08:42',
+                    thumb: generateThumbnailDataURL('📱', 320, 180),
+                    likes: 340,
+                    dislikes: 12,
+                    isShort: false,
+                    category: 'other'
+                },
+                {
+                    id: 'v_gadget_1',
+                    title: 'Распаковка умных часов',
+                    description: 'Что нового?',
+                    channelId: 'gadget',
+                    channelName: 'GadgetGuru',
+                    channelAvatar: channels['gadget'].avatar,
+                    views: 8300,
+                    viewers: [],
+                    publishedAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
+                    duration: '12:15',
+                    thumb: generateThumbnailDataURL('⌚', 320, 180),
+                    likes: 210,
+                    dislikes: 5,
+                    isShort: false,
+                    category: 'other'
+                },
+                {
+                    id: 'v_sport_1',
+                    title: 'Лучшие моменты матча',
+                    description: 'Обзор игры',
+                    channelId: 'sport',
+                    channelName: 'SportVision',
+                    channelAvatar: channels['sport'].avatar,
+                    views: 45200,
+                    viewers: [],
+                    publishedAt: Date.now() - 1 * 24 * 60 * 60 * 1000,
+                    duration: '05:30',
+                    thumb: generateThumbnailDataURL('⚽', 320, 180),
+                    likes: 890,
+                    dislikes: 23,
+                    isShort: false,
+                    category: 'other'
+                }
+            ];
+            exampleVideos.forEach(v => {
+                videos.push(v);
                 channels[v.channelId].videos.push(v.id);
+            });
+        }
+
+        // Синхронизация videos и каналов (добавляем новые видео в каналы, если не добавлены)
+        videos.forEach(v => {
+            if (channels[v.channelId]) {
+                if (!channels[v.channelId].videos.includes(v.id)) {
+                    channels[v.channelId].videos.push(v.id);
+                }
+            }
         });
 
         // ---------- Вспомогательные функции ----------
@@ -1235,13 +1342,12 @@
         }
         notifyIcon.addEventListener('click', () => showNotification(i18n[currentLang].noNotifications || 'Новых уведомлений нет'));
 
-        // ---------- Рендер главной с учётом фильтра (исправлено: теперь все видео) ----------
+        // ---------- Рендер главной с учётом фильтра ----------
         function renderHomeGrid() {
             let filtered = videos.filter(v => !v.isShort);
             if (currentFilter !== 'all') {
                 filtered = filtered.filter(v => v.category === currentFilter);
             }
-            // Убрали фильтр по channelId, теперь все видео
             homeGrid.innerHTML = filtered.map(v => videoCardHTML(v, v.channelId === currentUser.id)).join('');
         }
 
@@ -1685,7 +1791,7 @@
             }
         }
 
-        // ---------- Лайк / дизлайк ----------
+        // ---------- Лайк / дизлайк (без перезагрузки плеера) ----------
         document.getElementById('videoLikeBtn').addEventListener('click', () => {
             if (!currentVideoId) return;
             const video = videos.find(v => v.id === currentVideoId);
