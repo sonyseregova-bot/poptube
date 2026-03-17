@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PopTube — финал (просмотры, сохранение времени)</title>
+    <title>PopTube — финал (все видео на главной)</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <style>
-        /* Стили без изменений, добавим только элемент для просмотров */
+        /* Стили без изменений */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
@@ -923,7 +923,7 @@
             }
         }
 
-        // ---------- Сохранение состояния страницы (с временем видео) ----------
+        // ---------- Сохранение состояния страницы ----------
         function saveState() {
             const state = {
                 page: lastPage,
@@ -1235,12 +1235,13 @@
         }
         notifyIcon.addEventListener('click', () => showNotification(i18n[currentLang].noNotifications || 'Новых уведомлений нет'));
 
-        // ---------- Рендер главной с учётом фильтра ----------
+        // ---------- Рендер главной с учётом фильтра (исправлено: теперь все видео) ----------
         function renderHomeGrid() {
             let filtered = videos.filter(v => !v.isShort);
             if (currentFilter !== 'all') {
                 filtered = filtered.filter(v => v.category === currentFilter);
             }
+            // Убрали фильтр по channelId, теперь все видео
             homeGrid.innerHTML = filtered.map(v => videoCardHTML(v, v.channelId === currentUser.id)).join('');
         }
 
@@ -1623,13 +1624,11 @@
                     });
                 } else videoPlayer.src = '';
 
-                // Восстанавливаем время, если передано
                 if (restoreTime !== null && !isNaN(restoreTime)) {
                     const seekToTime = () => {
                         if (videoPlayer.duration >= restoreTime) {
                             videoPlayer.currentTime = restoreTime;
                         } else {
-                            // Если длительность ещё не известна, ждём
                             videoPlayer.addEventListener('loadedmetadata', () => {
                                 videoPlayer.currentTime = Math.min(restoreTime, videoPlayer.duration);
                             }, { once: true });
@@ -1686,7 +1685,7 @@
             }
         }
 
-        // ---------- Лайк / дизлайк (без перезагрузки плеера) ----------
+        // ---------- Лайк / дизлайк ----------
         document.getElementById('videoLikeBtn').addEventListener('click', () => {
             if (!currentVideoId) return;
             const video = videos.find(v => v.id === currentVideoId);
