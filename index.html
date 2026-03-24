@@ -797,69 +797,18 @@
         const STORAGE_KEY = 'poptube_data';
         const STATE_KEY = 'poptube_state';
 
-        // ---------- IndexedDB ----------
-        const DB_NAME = 'PopTubeDB';
-        const DB_VERSION = 1;
-        const STORE_NAME = 'videos';
-        let db = null;
-
-        function openDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onerror = () => reject(request.error);
-                request.onsuccess = () => { db = request.result; resolve(db); };
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME))
-                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                };
-            });
-        }
-
-        function saveVideoFileToDB(file) {
-            return new Promise((resolve, reject) => {
-                if (!db) return reject('DB not open');
-                const reader = new FileReader();
-                reader.readAsArrayBuffer(file);
-                reader.onload = () => {
-                    const buffer = reader.result;
-                    const id = 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                    const transaction = db.transaction([STORE_NAME], 'readwrite');
-                    const store = transaction.objectStore(STORE_NAME);
-                    const request = store.put({ id: id, data: buffer, type: file.type });
-                    request.onsuccess = () => resolve(id);
-                    request.onerror = () => reject(request.error);
-                };
-                reader.onerror = reject;
-            });
-        }
-
-        function getVideoFileFromDB(id) {
-            return new Promise((resolve, reject) => {
-                if (!db) return reject('DB not open');
-                const transaction = db.transaction([STORE_NAME], 'readonly');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.get(id);
-                request.onsuccess = () => {
-                    if (request.result) {
-                        const blob = new Blob([request.result.data], { type: request.result.type });
-                        resolve(blob);
-                    } else reject('File not found');
-                };
-                request.onerror = reject;
-            });
-        }
-
-        function deleteVideoFileFromDB(fileId) {
-            return new Promise((resolve, reject) => {
-                if (!db) return reject('DB not open');
-                const transaction = db.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.delete(fileId);
-                request.onsuccess = () => resolve();
-                request.onerror = reject;
-            });
-        }
+      // Вместо сохранения в IndexedDB
+async function uploadVideo(file, metadata) {
+    const formData = new FormData();
+    formData.append('video', file);
+    formData.append('title', metadata.title);
+    formData.append('description', metadata.description);
+    // и т.д.
+    const res = await fetch('/api/videos', { method: 'POST', body: formData });
+    const newVideo = await res.json();
+    videos.push(newVideo);
+    renderAllGrids();
+}
 
         // ---------- Локальное хранилище ----------
         function saveToStorage() {
@@ -1634,7 +1583,11 @@
 
         // ---------- Открыть видео ----------
         async function openVideoPage(videoId, restoreTime = null) {
+            const videoRes = await fetch(`/api/videos/${videoId}`);
+    const video = await videoRes.json();
+             videoPlayer.src = video.video_url;
             console.log('openVideoPage', videoId);
+                fetch(`/api/videos/${videoId}/view`, { method: 'POST' });
             if (currentVideoId) {
                 const prevVideo = videos.find(v => v.id === currentVideoId);
                 if (prevVideo && prevVideo.videoUrl?.startsWith('blob:')) {
